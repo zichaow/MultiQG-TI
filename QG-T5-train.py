@@ -1,91 +1,16 @@
 import os, wandb, argparse, yaml
-from transformers import (
-    T5Tokenizer, T5ForConditionalGeneration, get_linear_schedule_with_warmup)
-from torch.optim import AdamW
-import pytorch_lightning as pl
+from transformers import T5Tokenizer
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.strategies.ddp import DDPStrategy
 from pytorch_lightning.strategies import DeepSpeedStrategy
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor, ModelCheckpoint
 
-from dataset_utils import *
+from utils_dataset import *
+from utils_model import LightningT5Module
 
 os.environ['WANDB_NOTEBOOK_NAME'] = 'multimodal-QG-train'
 seed_everything(21, workers=True)
-
-
-
-# %%
-class FinetuneTransformer(pl.LightningModule):
-    def __init__(self, model_name, lp=False, 
-                 training_dl=None, valid_dl=None, 
-                 lr=3e-4, num_train_epochs=5, warmup_steps=1000):
-        super().__init__()
-        self.model = T5ForConditionalGeneration.from_pretrained(model_name)
-        # Check Linear Probing
-        if lp:
-            for name, param in self.model.named_parameters():
-                if 'DenseReluDense' in name or 'layer_norm' in name:
-                    param.requires_grad = True
-                else:
-                    param.requires_grad = False
-            self.model.shared.requires_grad = True
-            self.model.lm_head.requires_grad = True
-        self.training_dataloader = training_dl
-        self.hparams.max_epochs = num_train_epochs
-        self.hparams.num_train_epochs = num_train_epochs
-        self.hparams.warmup_steps = warmup_steps
-        self.hparams.lr = lr
-        self.save_hyperparameters()
-    
-    def forward(self, input_ids, attention_mask, labels=None):     
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        return outputs
-    
-    def common_step(self, batch, batch_idx):
-        outputs = self(**batch)
-        loss = outputs.loss
-
-        return loss
-    
-    def training_step(self, batch, batch_idx):
-        loss = self.common_step(batch, batch_idx)     
-        # logs metrics for each training_step,
-        # and the average across the epoch
-        self.log("training_loss", loss)
-
-        return loss
-    
-    def validation_step(self, batch, batch_idx):
-        loss = self.common_step(batch, batch_idx)     
-        self.log("validation_loss", loss, on_epoch=True, sync_dist=True)
-
-        return loss
-    
-    def test_step(self, batch, batch_idx):
-        loss = self.common_step(batch, batch_idx)     
-
-        return loss
-    
-    def configure_optimizers(self):
-        # create optimizer
-        optimizer = AdamW(self.parameters(), lr=self.hparams.lr)
-        # optimizer = DeepSpeedCPUAdam(self.parameters(), lr=self.hparams.lr)
-        #optimizer = Adafactor(model.parameters(), scale_parameter=False, relative_step=False, warmup_init=False, lr=1e-3)
-
-        num_train_optimization_steps = self.hparams.num_train_epochs * len(self.training_dataloader)
-        lr_scheduler = {'scheduler': get_linear_schedule_with_warmup(optimizer,
-                                                    num_warmup_steps=self.hparams.warmup_steps,
-                                                    num_training_steps=num_train_optimization_steps),
-                        'name': 'learning_rate',
-                        'interval':'step',
-                        'frequency': 1}
-        
-        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
-    
-    def train_dataloader(self):
-        return self.training_dataloader
 
     
 def add_params():
@@ -94,6 +19,8 @@ def add_params():
     parser.add_argument("--dataset_dir", type=str, 
                         default="/data/zw16/dataset_ScienceQA", 
                         help="Path to the data directory")
+    parser.add_argument("--data_keep_mode", type=int, default=1,
+                        help="How to keep the data. 1: hint+image, 2: image+lecture, 3: image+lecture+hint, 4: image+lecture+NO hint")
     parser.add_argument("--descriptions_file", type=str,
                         default='generated_descriptions/blip2-flan-t5-xxl_halfprecTrue_prompt0_gmodeC_pa0.6_topk4_temp1_topp0.95_spTrue_nsp20_minl30_maxl100_seed42.csv', 
                         help="Path to the descriptions file")
@@ -103,9 +30,9 @@ def add_params():
     parser.add_argument("--desc_sel_mode", type=int, default=2,
                         help="How to select the description. 1: random, 2: ppl rerank")
     parser.add_argument("--input_format_opt", type=int, default=1,
-                        help="How to format the input. 1: text+image context, 2: text only, 3: image only")
+                        help="How to format the input. 1: hint+image context, 2: hint only, 3: image only, 4: lecture+image")
     parser.add_argument("--target_format_opt", type=int, default=1,
-                        help="How to format the target. 1: question only; 2: question+choices")
+                        help="How to format the target. 1: question only; 2: question+choices; 3: hint+question")
     # Model configs
     parser.add_argument("-MN", "--model_name", type=str, default="t5-small", 
                         help="Variant of the Transformer model for finetuning")
@@ -145,11 +72,11 @@ if __name__ == '__main__':
     # Create run_name with model_name, model name extracted from descriptions_file, 
     # desc_sel_mode, input_format_opt, target_format_opt, 
     # batch_size, learning_rate, num_epochs, accumulate_grad_batches, gradient_clip_val
-    run_name = f'{"-".join(args.model_name.split("/"))}_descSel{args.desc_sel_mode}_inpFormat{args.input_format_opt}_tarFormat{args.target_format_opt}_bs{args.batch_size}_lr{args.learning_rate}_ep{args.num_epochs}_gradAcc{args.accumulate_grad_batches}_gradClip{args.gradient_clip_val}_descFile{args.descriptions_file.split("/")[-1].replace(".csv", "")}'
+    run_name = f'{"-".join(args.model_name.split("/"))}_DataKeep{args.data_keep_mode}_descSel{args.desc_sel_mode}_inpFormat{args.input_format_opt}_tarFormat{args.target_format_opt}_bs{args.batch_size}_lr{args.learning_rate}_ep{args.num_epochs}_gradAcc{args.accumulate_grad_batches}_gradClip{args.gradient_clip_val}_descFile{args.descriptions_file.split("/")[-1].replace(".csv", "")}'
 
     problems, pid_splits, descriptions, extracted_texts = load_and_filter_raw_data(
         dataset_dir=args.dataset_dir, descriptions_file=args.descriptions_file, 
-        extracted_texts_file=args.extracted_texts_file)
+        extracted_texts_file=args.extracted_texts_file, data_keep_mode=args.data_keep_mode)
     inputs_train, targets_train, pids_train = format_io_data(
         problems, pid_splits, descriptions, extracted_texts, split='train', 
         desc_sel_mode=args.desc_sel_mode, input_format_opt=args.input_format_opt, 
@@ -163,10 +90,12 @@ if __name__ == '__main__':
     tokenizer = T5Tokenizer.from_pretrained(args.model_name)
     print('Loaded T5 tokenizer!')
     
+    src_len = 1024 if args.input_format_opt == 4 else 512
+    tgt_len = 512 if args.target_format_opt == 3 else 128
     train_input_ids, train_attention_mask, train_labels = get_transformer_encoding(
-        tokenizer, inputs_train, targets_train)
+        tokenizer, inputs_train, targets_train, src_len=src_len, tgt_len=tgt_len)
     valid_input_ids, valid_attention_mask, valid_labels = get_transformer_encoding(
-        tokenizer, inputs_valid, targets_valid)
+        tokenizer, inputs_valid, targets_valid, src_len=src_len, tgt_len=tgt_len)
     print('Tokenized Data!')
 
     train_dataset = QGDataset(train_input_ids, train_attention_mask, train_labels)
@@ -186,11 +115,11 @@ if __name__ == '__main__':
         for file in os.listdir(search_dir):
             ckpt_file = os.path.join(search_dir, file)
         print('ckpt_file', ckpt_file)
-        model = FinetuneTransformer.load_from_checkpoint(ckpt_file)
+        model = LightningT5Module.load_from_checkpoint(ckpt_file)
         print('Successfully loaded the saved checkpoint!')
         save_name = 'reft_' + run_name
     else:
-        model = FinetuneTransformer(
+        model = LightningT5Module(
             model_name = args.model_name, lp=args.linear_probing, 
             training_dl=training_dataloader, valid_dl=valid_dataloader,
             num_train_epochs=max_epochs, lr=args.learning_rate)
