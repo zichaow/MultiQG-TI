@@ -30,7 +30,7 @@ def add_params():
     parser.add_argument("--desc_sel_mode", type=int, default=2,
                         help="How to select the description. 1: random, 2: ppl rerank")
     parser.add_argument("--input_format_opt", type=int, default=1,
-                        help="How to format the input. 1: hint+image context, 2: hint only, 3: image only, 4: lecture+image")
+                        help="How to format the input. 1: hint+image context, 2: hint only, 3: image only, 4: lecture+image, 5: lecture only")
     parser.add_argument("--target_format_opt", type=int, default=1,
                         help="How to format the target. 1: question only; 2: question+choices; 3: hint+question")
     # Model configs
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     tokenizer = T5Tokenizer.from_pretrained(args.model_name)
     print('Loaded T5 tokenizer!')
     
-    src_len = 1024 if args.input_format_opt == 4 else 512
-    tgt_len = 512 if args.target_format_opt == 3 else 128
+    src_len = 1024 if args.input_format_opt in set([4,5]) else 512 # use 1024 length if context is in input
+    tgt_len = 512 if args.target_format_opt == 3 else 128 # use 512 length if hint is in target
     train_input_ids, train_attention_mask, train_labels = get_transformer_encoding(
         tokenizer, inputs_train, targets_train, src_len=src_len, tgt_len=tgt_len)
     valid_input_ids, valid_attention_mask, valid_labels = get_transformer_encoding(

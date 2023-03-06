@@ -1,12 +1,12 @@
 '''
 python -m code.finetune.inference -N t5_small -M t5-small
 '''
-import os, time, argparse, yaml, wandb, torch
+import os, random, time, argparse, yaml, wandb, torch
 from tqdm import tqdm
 from threading import Thread
 import pandas as pd
-# import GPUtil
 from transformers import T5Tokenizer
+from pdb import set_trace
 
 from utils_dataset import (
     load_and_filter_raw_data, format_io_data, 
@@ -59,21 +59,6 @@ def get_preds(tokenizer, generated_tokens):
         val_preds.append(sample)
     return val_preds
 
-# class Monitor(Thread):
-#     def __init__(self, delay):
-#         super(Monitor, self).__init__()
-#         self.stopped = False
-#         self.delay = delay # Time between calls to GPUtil
-#         self.start()
-
-#     def run(self):
-#         while not self.stopped:
-#             GPUtil.showUtilization()
-#             time.sleep(self.delay)
-
-#     def stop(self):
-#         self.stopped = True
-
 def add_params():
     parser = argparse.ArgumentParser()
     parser.add_argument("-CF", "--checkpoint_folder", type=str, default="./checkpoints", help="Folder where the checkpoint is stored")
@@ -113,11 +98,14 @@ if __name__=='__main__':
     #%% Get input
     problems, pid_splits, descriptions, extracted_texts = load_and_filter_raw_data(
         dataset_dir=args.dataset_dir, descriptions_file=args.descriptions_file, 
-        extracted_texts_file=args.extracted_texts_file)
+        extracted_texts_file=args.extracted_texts_file, data_keep_mode=args.data_keep_mode)
     inputs, targets, pids = format_io_data(
         problems, pid_splits, descriptions, extracted_texts, split=args.split, 
         desc_sel_mode=args.desc_sel_mode, input_format_opt=args.input_format_opt, 
         target_format_opt=args.target_format_opt)
+    print('Number of problems: ', len(problems))
+    print('sample input: ', random.choice(inputs))
+    print('sample target: ', random.choice(targets))
     
     tokenizer = T5Tokenizer.from_pretrained(args.model_name)
     
@@ -144,11 +132,6 @@ if __name__=='__main__':
     print('ckpt_file', ckpt_file)
     model = LightningT5Module.load_from_checkpoint(ckpt_file).model.to(device)
     print('Successfully loaded the saved checkpoint!')
-
-    # # NOTE: Track GPU Utilization
-    # if args.track_gpu_usage:
-    #     print('Tracking GPU Usage')
-    #     monitor = Monitor(10)
 
     print('Begining Generation')
     val_outputs, val_ppls = get_generation(model, test_dataloader, 

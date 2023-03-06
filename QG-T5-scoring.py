@@ -105,7 +105,7 @@ def get_top_row(group):
     return group.sort_values('ppl').iloc[0]
 
 # Load generated data
-d = './checkpoints/google-flan-t5-large_descSel2_inpFormat2_tarFormat1_bs3_lr0.0003_ep8_gradAcc4_gradClip1.0_descFileblip2-flan-t5-xxl_halfprecTrue_prompt0_gmodeC_pa0.6_topk4_temp1_topp0.95_spTrue_nsp20_minl30_maxl100_seed42/'
+d = './checkpoints/google-flan-t5-base_DataKeep3_descSel2_inpFormat4_tarFormat3_bs3_lr0.0003_ep8_gradAcc4_gradClip1.0_descFileblip2-flan-t5-xxl_halfprecTrue_prompt0_gmodeC_pa0.6_topk4_temp1_topp0.95_spTrue_nsp20_minl30_maxl100_seed42'
 f = 'C_val_t1_p0.9_k4_a0.6_n10_s37.csv'
 df = pd.read_csv(os.path.join(d,f))
 df_top1 = df.groupby('pid').apply(get_top_row).reset_index(drop=True)
