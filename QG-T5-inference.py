@@ -5,7 +5,7 @@ import os, random, time, argparse, yaml, wandb, torch
 from tqdm import tqdm
 from threading import Thread
 import pandas as pd
-from transformers import T5Tokenizer
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 from pdb import set_trace
 
 from utils_dataset import (
@@ -123,14 +123,19 @@ if __name__=='__main__':
     # %%
     # Load the Generative Head 
     # search for ckpt file
-    search_dir = os.path.join(args.checkpoint_folder, args.run_name)
-    for file in os.listdir(search_dir):
-        name, ext = os.path.splitext(file)
-        if ext == '.ckpt':
-            ckpt_file = os.path.join(search_dir, file)
-
-    print('ckpt_file', ckpt_file)
-    model = LightningT5Module.load_from_checkpoint(ckpt_file).model.to(device)
+    print(args.model_name)
+    if args.model_name == 'google/flan-t5-xl':
+        print('ckpt folder path: ', os.path.join(args.checkpoint_folder, args.run_name))
+        model = T5ForConditionalGeneration.from_pretrained(
+            os.path.join(args.checkpoint_folder, args.run_name, 'huggingface_ckpt')).to(device)
+    else:
+        search_dir = os.path.join(args.checkpoint_folder, args.run_name)
+        for file in os.listdir(search_dir):
+            name, ext = os.path.splitext(file)
+            if ext == '.ckpt':
+                ckpt_file = os.path.join(search_dir, file)
+        print('ckpt_file', ckpt_file)
+        model = LightningT5Module.load_from_checkpoint(ckpt_file).model.to(device)
     print('Successfully loaded the saved checkpoint!')
 
     print('Begining Generation')
