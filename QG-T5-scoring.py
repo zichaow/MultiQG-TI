@@ -1,4 +1,4 @@
-import os, string, re, json, evaluate
+import os, string, re, json, argparse, evaluate
 import pandas as pd
 from tqdm import tqdm
 from pdb import set_trace
@@ -104,9 +104,15 @@ def get_top_question(group):
 def get_top_row(group):
     return group.sort_values('ppl').iloc[0]
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-D", "--dir", type=str, help="directory of the generated data")
+parser.add_argument("-F", "--file", type=str, default='C_val_t1_p0.9_k4_a0.6_n10_s37.csv', 
+                    help="name of the generated data file")
+params = parser.parse_args()
+
 # Load generated data
-d = './checkpoints/google-flan-t5-base_DataKeep3_descSel2_inpFormat4_tarFormat3_bs3_lr0.0003_ep8_gradAcc4_gradClip1.0_descFileblip2-flan-t5-xxl_halfprecTrue_prompt0_gmodeC_pa0.6_topk4_temp1_topp0.95_spTrue_nsp20_minl30_maxl100_seed42'
-f = 'C_val_t1_p0.9_k4_a0.6_n10_s37.csv'
+d = params.dir
+f = params.file
 df = pd.read_csv(os.path.join(d,f))
 df_top1 = df.groupby('pid').apply(get_top_row).reset_index(drop=True)
 m_scores = ml_metrics(df_top1)
