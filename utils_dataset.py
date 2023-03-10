@@ -117,6 +117,9 @@ def process_desc(desc, desc_sel_mode=1):
     elif desc_sel_mode == 2:
         # rerank desc by perplexity, ascending order, then choose the first one
         desc = desc.sort_values(by=['ppls'])['generated_descriptions'].tolist()[0]
+    elif desc_sel_mode == 3:
+        # rerank desc by length of the description, descending order, then choose the first one (the longest one)
+        desc = desc.sort_values(by='generated_descriptions', key=lambda x: x.str.len(), ascending=False)['generated_descriptions'].tolist()[0]
     else:
         raise Exception('desc_sel_mode not supported or wrong desc_sel_mode value: {}'.format(desc_sel_mode))
     return desc
@@ -213,5 +216,5 @@ def get_dataloader(batch_size, dataset, datatype='train'):
 #     dataset_dir, descriptions_file, extracted_texts_file, data_keep_mode=3)
 
 # inputs, targets, pids = format_io_data(problems, pid_splits, descriptions, extracted_texts, split='train', 
-#                    desc_sel_mode=2, input_format_opt=4, target_format_opt=3)
+#                    desc_sel_mode=3, input_format_opt=4, target_format_opt=3)
 # set_trace()
