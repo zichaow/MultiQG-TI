@@ -177,7 +177,6 @@ def generate_vit(url, model, processor, tokenizer, gen_mode='C',
         valid_gen_idx = torch.where(gen!=50256)[0]
         logits = torch.vstack([generation['scores'][i][idx].unsqueeze(0) for i in valid_gen_idx-1])
         ppl = compute_perplexity(logits, gen[gen!=50256])
-        set_trace()
         assert(torch.isnan(ppl) == False and ppl < 1e4)
         outputs.append(gen_text)
         ppls.append(ppl.item())
