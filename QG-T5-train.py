@@ -28,7 +28,7 @@ def add_params():
                         default='extracted_texts_img/extracted_texts.json',
                         help="Path to the extracted texts file")
     parser.add_argument("--desc_sel_mode", type=int, default=2,
-                        help="How to select the description. 1: random, 2: ppl rerank")
+                        help="How to select the description. 1: random, 2: ppl rerank, 3: longest")
     parser.add_argument("--input_format_opt", type=int, default=1,
                         help="How to format the input. 1: hint+image context, 2: hint only, 3: image only, 4: lecture+image, 5: lecture only")
     parser.add_argument("--target_format_opt", type=int, default=1,
