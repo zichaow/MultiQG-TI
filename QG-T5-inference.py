@@ -28,12 +28,12 @@ def get_generation(model, val_dataloader, decoding_strategy='C',
     for batch in tqdm(val_dataloader):
         val_input_ids = batch['input_ids'].to(device)
         if decoding_strategy == 'N': # Nucleus Sampling
-            generation = model.generate(val_input_ids, do_sample=True, max_new_tokens=128,
+            generation = model.generate(val_input_ids, do_sample=True, max_new_tokens=512,
                                         top_p=prob_p, temperature=temp,
                                         num_return_sequences=num_samples,
                                         output_scores=True, return_dict_in_generate=True)
         elif decoding_strategy == 'C': # Contrastive Decoding
-            generation = model.generate(val_input_ids, do_sample=True, max_new_tokens=128,
+            generation = model.generate(val_input_ids, do_sample=True, max_new_tokens=512,
                                         penalty_alpha=alpha, top_k=K,
                                         num_return_sequences=num_samples,
                                         output_scores=True, return_dict_in_generate=True)
