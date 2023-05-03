@@ -105,18 +105,59 @@ def get_top_row(group):
     return group.sort_values('ppl').iloc[0]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-D", "--dir", type=str, help="directory of the generated data")
-parser.add_argument("-F", "--file", type=str, default='C_val_t1_p0.9_k4_a0.6_n10_s37.csv', 
+parser.add_argument("-D", "--dir", type=str, 
+                    help="directory of the generated data")
+parser.add_argument("-F", "--file", type=str, 
+                    default='C_val_t1_p0.9_k4_a0.6_n10_s37.csv', 
                     help="name of the generated data file")
+parser.add_argument("-Q", "--question_only", action='store_true', 
+                    help="whether to only evaluate the generated questions")
+parser.add_argument("-C", "--context_only", action='store_true', 
+                    help="whether to only evaluate the generated questions")
 params = parser.parse_args()
 
 # Load generated data
 d = params.dir
 f = params.file
 df = pd.read_csv(os.path.join(d,f))
+
+# Optionally, only evaluate the generated questions
+if params.question_only:
+    generated_q = []
+    ground_truth_q = []
+    for _, row in df.iterrows():
+        generated_q.append(row['generated_question'].split('Question:')[-1].strip())
+        ground_truth_q.append(row['target'].split('\nQuestion:\n')[-1].strip())
+    df['generated_question'] = generated_q
+    df['target'] = ground_truth_q
+    # Save the new df to a new file
+    df.to_csv(os.path.join(d,f[:-4]+'_q_only.csv'), index=False)
+
+# Optionally, only evaluate the generated context
+if params.context_only:
+    generated_c = []
+    ground_truth_c = []
+    for _, row in df.iterrows():
+        generated_c.append(row['generated_question'].split('Question context:')[-1].strip().split('Question:')[0].strip())
+        ground_truth_c.append(row['target'].split('\nQuestion context:\n')[-1].strip().split('\nQuestion:\n')[0].strip())
+    df['generated_question'] = generated_c
+    df['target'] = ground_truth_c
+    # Save the new df to a new file
+    df.to_csv(os.path.join(d,f[:-4]+'_c_only.csv'), index=False)
+
+# Rerank by ppl
 df_top1 = df.groupby('pid').apply(get_top_row).reset_index(drop=True)
+
+# Compute scores
 m_scores = ml_metrics(df_top1)
 
 # save result as json file
-with open(f'{d}/{f[:-4]}_metrics.json', 'w') as file:
-    json.dump(m_scores, file)
+if params.question_only:
+    with open(f'{d}/{f[:-4]}_metrics_q_only.json', 'w') as file:
+        json.dump(m_scores, file)
+elif params.context_only:
+    with open(f'{d}/{f[:-4]}_metrics_c_only.json', 'w') as file:
+        json.dump(m_scores, file)
+else:
+    with open(f'{d}/{f[:-4]}_metrics.json', 'w') as file:
+        json.dump(m_scores, file)

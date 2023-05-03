@@ -207,14 +207,3 @@ def get_dataloader(batch_size, dataset, datatype='train'):
     else:
         return DataLoader(dataset=dataset, batch_size = batch_size)
     
-
-# # Tests
-# dataset_dir = '/data/zw16/dataset_ScienceQA'
-# descriptions_file = 'generated_descriptions/blip2-flan-t5-xxl_halfprecTrue_prompt0_gmodeC_pa0.6_topk4_temp1_topp0.95_spTrue_nsp20_minl30_maxl100_seed42.csv'
-# extracted_texts_file = 'extracted_texts_img/extracted_texts.json'
-# problems, pid_splits, descriptions, extracted_texts = load_and_filter_raw_data(
-#     dataset_dir, descriptions_file, extracted_texts_file, data_keep_mode=3)
-
-# inputs, targets, pids = format_io_data(problems, pid_splits, descriptions, extracted_texts, split='train', 
-#                    desc_sel_mode=3, input_format_opt=4, target_format_opt=3)
-# set_trace()

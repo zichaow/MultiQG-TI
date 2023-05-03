@@ -17,7 +17,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=42, help="Random seed")
 parser.add_argument("--model", type=str, default="Salesforce/blip2-flan-t5-xxl", help="Model name")
-parser.add_argument("--dataset_dir", type=str, default="/data/zw16/dataset_ScienceQA", help="Dataset directory")
+parser.add_argument("--dataset_dir", type=str, default="/dataset/dataset_ScienceQA", help="Dataset directory")
 parser.add_argument("--save_dir", type=str, default="generated_descriptions", help="Save directory")
 parser.add_argument("--prompt_style", type=int, default=0, help="Prompt style")
 parser.add_argument("--half_precision", type=lambda x: (str(x).lower() == 'true'), default=True, help="Model precision")
@@ -204,10 +204,7 @@ pid_splits['test'] = [pid for pid in pid_splits['test'] if pid in problems]
 
 #%% Load the model
 if 'blip' in args.model:
-    # config = Blip2Config.from_json_file("configs/blip2-flan-t5-xxl-config.json")
     processor = Blip2Processor.from_pretrained(args.model)
-    # model_path = '/data/zw16/huggingface/hub/models--Salesforce--blip2-flan-t5-xxl/snapshots/f16db5558fe24665a0e38a71b7136ece83468d40/'
-    # model = Blip2ForConditionalGeneration.from_pretrained(model_path, config=config, device_map="auto", torch_dtype=torch.float16)
     if args.half_precision:
         model = Blip2ForConditionalGeneration.from_pretrained(args.model, device_map="auto", torch_dtype=torch.float16)
     else:

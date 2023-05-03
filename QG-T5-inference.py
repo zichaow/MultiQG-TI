@@ -65,7 +65,7 @@ def add_params():
     parser.add_argument("-N", "--run_name", type=str, required=True, help="Name of the Run (Used in storing the model)")
     parser.add_argument("-S", "--seed", type=int, default=37, help="seed for reproducibility")
     parser.add_argument("-SP", "--split", type=str, default="val", help="Split to evaluate on (val/test)")
-    parser.add_argument("-B", "--batch_size", type=int, default=8, help="Batch size for passing through the Transformer Model")
+    parser.add_argument("-B", "--batch_size", type=int, default=4, help="Batch size for passing through the Transformer Model")
     parser.add_argument('-DS', '--decoding_strategy', type=str, default="C", help='Specify the decoding strategy (N-Nucleus sampling, C - Contrsative)')
     parser.add_argument("-PS", "--p_sampling", type=float, default=0.9, help="Value of P used in the P-sampling")
     parser.add_argument("-T", "--temperature", type=float, default=1, help="Temperature for softmax decoding")
