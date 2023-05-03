@@ -33,6 +33,7 @@ This repository contains the code for the BEA 2023 submission `MultiQG-TI: Towar
   - `download_dataset.sh`: script to download the ScienceQA dataset
   - `generated_description_from_img.py`: script to generated description from image
   - `extract_text_from_img.py`: script to extract the texts from the image
+  - `plot_results.ipynb`: notebook to visualize/reproduce selected results in the paper
 
 ## How to reproduce
 1. Produce the image descriptions
