@@ -25,10 +25,3 @@ unzip val.zip
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1HIMhO4MqJBzsyn1jEuyQSzcUnYROsRRU' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1HIMhO4MqJBzsyn1jEuyQSzcUnYROsRRU" -O version.txt && rm -rf /tmp/cookies.txt
 
 cd ..
-
-## Lab system specific operation
-## Move the dataset to /data folder
-if [ ! -d /data/zw16/dataset_ScienceQA ]; then
-  mkdir /data/zw16/dataset_ScienceQA
-fi
-mv dataset/* /data/zw16/dataset_ScienceQA

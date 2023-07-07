@@ -7,7 +7,7 @@ from pdb import set_trace
 # You can set the parameter `lang` as `ch`, `en`, `fr`, `german`, `korean`, `japan`
 # to switch the language model in order.
 ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log = False)  # need to run only once to download and load model into memory
-dataset_dir = '/data/zw16/dataset_ScienceQA/'
+dataset_dir = 'dataset_ScienceQA/'
 save_dir = 'extracted_texts_img'
 
 final_results = dict()

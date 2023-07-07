@@ -17,7 +17,7 @@ def add_params():
     parser = argparse.ArgumentParser()
     # Data IO
     parser.add_argument("--dataset_dir", type=str, 
-                        default="/data/zw16/dataset_ScienceQA", 
+                        default="dataset/dataset_ScienceQA", 
                         help="Path to the data directory")
     parser.add_argument("--data_keep_mode", type=int, default=1,
                         help="How to keep the data. 1: hint+image, 2: image+lecture, 3: image+lecture+hint, 4: image+lecture+NO hint")
